@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Bill Splitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #0f172a;
+      --card: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.12);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --error: #f97373;
+      --border: #1f2937;
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.65);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 60%);
+      color: var(--text);
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 960px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 20px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 28px;
+      padding: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.17);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(22px);
+    }
+
+    @media (max-width: 768px) {
+      .app {
+        grid-template-columns: 1fr;
+        padding: 18px;
+        border-radius: 22px;
+      }
+    }
+
+    .left, .right {
+      background: radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), rgba(15, 23, 42, 0.94));
+      border-radius: var(--radius-xl);
+      padding: 18px 18px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .left::before, .right::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 55%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .left-inner, .right-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .title-group h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .tagline {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+      max-width: 220px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-wrapper {
+      flex: 1;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      border-color: rgba(34, 197, 94, 0.7);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    input::placeholder {
+      color: #6b7280;
+    }
+
+    .hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .inline-badge {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      gap: 8px;
+    }
+
+    .checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox input {
+      width: 15px;
+      height: 15px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      appearance: none;
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-block;
+      position: relative;
+      margin: 0;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .checkbox input:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.5);
+    }
+
+    .checkbox input:checked::after {
+      content: "✓";
+      position: absolute;
+      top: -1px;
+      left: 3px;
+      font-size: 0.8rem;
+      color: #052e16;
+    }
+
+    .btn-primary {
+      margin-top: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 900px;
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: radial-gradient(circle at top left, #22c55e, #16a34a);
+      color: #022c22;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 15px 35px rgba(22, 163, 74, 0.45);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 20px 40px rgba(22, 163, 74, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 10px 25px rgba(22, 163, 74, 0.35);
+    }
+
+    .btn-primary span.icon {
+      font-size: 1.1rem;
+    }
+
+    .error {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--error);
+      min-height: 16px;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .results-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.68rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .metric-card {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 14px;
+      padding: 9px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .metric-pill {
+      position: absolute;
+      bottom: 6px;
+      right: 9px;
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .metric-highlight {
+      color: var(--accent);
+    }
+
+    .leftover-ok {
+      color: var(--muted);
+    }
+
+    .leftover-nonzero {
+      color: #fb923c;
+    }
+
+    .section-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 8px 0 4px;
+    }
+
+    .text-block {
+      background: rgba(15, 23, 42, 0.98);
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      padding: 9px 10px;
+      font-size: 0.8rem;
+      white-space: pre-line;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .copy-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btn-ghost {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.7);
+      padding: 4px 8px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .copy-status {
+      font-size: 0.74rem;
+      color: var(--accent);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .tip-badge {
+      font-size: 0.7rem;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(34, 197, 94, 0.7);
+      margin-left: 5px;
+    }
+
+    .footer {
+      margin-top: 10px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .badge-emoji {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="left">
+      <div class="left-inner">
+        <div class="header">
+          <div class="title-group">
+            <h1>
+              Smart Bill Splitter
+            </h1>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              Single-Purpose Web Tool
+            </div>
+            <p class="subtitle">Stop mental math. Split bills in seconds with round-off logic built-in.</p>
+          </div>
+          <p class="tagline">
+            Enter your total, people, and tip. We handle exact and rounded amounts automatically.
+          </p>
+        </div>
+
+        <div class="field-group">
+          <div class="input-wrapper">
+            <label>
+              Total bill amount (₹)
+              <span class="inline-badge">Required</span>
+            </label>
+            <input type="number" id="total" placeholder="e.g. 1875.50" min="0" step="0.01" />
+            <p class="hint">Include taxes if you want to split everything together.</p>
+          </div>
+
+          <div class="input-row">
+            <div class="input-wrapper">
+              <label>
+                Number of people
+              </label>
+              <input type="number" id="people" placeholder="e.g. 4" min="1" step="1" />
+              <p class="hint">Everyone pays equally. (Advanced splits can be added later.)</p>
+            </div>
+            <div class="input-wrapper">
+              <label>
+                Tip (%)
+              </label>
+              <input type="number" id="tip" placeholder="optional" min="0" step="1" />
+              <p class="hint">If set, tip is added on top of the bill amount.</p>
+            </div>
+          </div>
+
+          <div class="options-row">
+            <label class="checkbox">
+              <input type="checkbox" id="rounding" checked />
+              <span>Round per-person share to nearest rupee</span>
+            </label>
+            <span class="inline-badge">No more ₹0.73 confusions</span>
+          </div>
+
+          <button class="btn-primary" id="calculateBtn">
+            <span class="icon">⚡</span>
+            Calculate Split
+          </button>
+
+          <p class="error" id="error"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="right-inner">
+        <div class="results-header">
+          <h2>Split Summary</h2>
+          <div class="chip-row">
+            <span class="chip">
+              <span class="chip-dot"></span> Real-time calculations
+            </span>
+            <span class="chip">Copy-paste ready</span>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-label">Total with tip</div>
+            <div class="metric-value" id="totalWithTip">₹0.00</div>
+            <div class="metric-pill">Bill + tip</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Exact per person</div>
+            <div class="metric-value" id="exactPerPerson">₹0.00</div>
+            <div class="metric-pill">Unrounded</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Rounded per person</div>
+            <div class="metric-value metric-highlight" id="roundedPerPerson">₹0.00</div>
+            <div class="metric-pill">Pay this 💸</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Rounding leftover</div>
+            <div class="metric-value" id="leftover">₹0.00</div>
+            <div class="metric-pill" id="leftoverLabel">Perfectly balanced</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">
+            Message for your group
+            <span id="tipBadge" class="tip-badge" style="display:none;"></span>
+          </div>
+          <div class="text-block" id="message">
+            Enter details on the left to generate a WhatsApp-ready breakdown.
+          </div>
+          <div class="copy-row">
+            <button class="btn-ghost" id="copyBtn">
+              <span>📋</span>
+              Copy text
+            </button>
+            <span class="copy-status" id="copyStatus"></span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span>
+            <span class="badge-emoji">🧮</span>
+            Built as a single-purpose micro-tool.
+          </span>
+          <span>
+            You can extend this with custom shares, export, etc.
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalInput = document.getElementById("total");
+    const peopleInput = document.getElementById("people");
+    const tipInput = document.getElementById("tip");
+    const roundingInput = document.getElementById("rounding");
+    const errorEl = document.getElementById("error");
+
+    const totalWithTipEl = document.getElementById("totalWithTip");
+    const exactPerPersonEl = document.getElementById("exactPerPerson");
+    const roundedPerPersonEl = document.getElementById("roundedPerPerson");
+    const leftoverEl = document.getElementById("leftover");
+    const leftoverLabelEl = document.getElementById("leftoverLabel");
+    const messageEl = document.getElementById("message");
+    const tipBadgeEl = document.getElementById("tipBadge");
+
+    const calculateBtn = document.getElementById("calculateBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyStatusEl = document.getElementById("copyStatus");
+
+    function formatMoney(value) {
+      if (isNaN(value)) return "₹0.00";
+      return "₹" + value.toFixed(2);
+    }
+
+    function calculate() {
+      errorEl.textContent = "";
+      copyStatusEl.textContent = "";
+
+      const total = parseFloat(totalInput.value);
+      let people = parseInt(peopleInput.value, 10);
+      const tipPercent = parseFloat(tipInput.value);
+      const applyRounding = roundingInput.checked;
+
+      if (isNaN(total) || total <= 0) {
+        errorEl.textContent = "Please enter a valid total bill amount greater than 0.";
+        return;
+      }
+
+      if (isNaN(people) || people <= 0) {
+        people = 1;
+        peopleInput.value = "1";
+      }
+
+      let tipAmount = 0;
+      if (!isNaN(tipPercent) && tipPercent > 0) {
+        tipAmount = (total * tipPercent) / 100;
+      }
+
+      const totalWithTip = total + tipAmount;
+      const exactPerPerson = totalWithTip / people;
+
+      let roundedPerPerson = exactPerPerson;
+      if (applyRounding) {
+        roundedPerPerson = Math.round(exactPerPerson);
+      }
+
+      const roundedTotal = roundedPerPerson * people;
+      const leftover = roundedTotal - totalWithTip;
+
+      totalWithTipEl.textContent = formatMoney(totalWithTip);
+      exactPerPersonEl.textContent = formatMoney(exactPerPerson);
+      roundedPerPersonEl.textContent = formatMoney(roundedPerPerson);
+
+      leftoverEl.textContent = formatMoney(leftover);
+
+      if (Math.abs(leftover) < 0.01) {
+        leftoverLabelEl.textContent = "Perfectly balanced";
+        leftoverEl.classList.remove("leftover-nonzero");
+        leftoverEl.classList.add("leftover-ok");
+      } else if (leftover > 0) {
+        leftoverLabelEl.textContent = "Extra collected";
+        leftoverEl.classList.remove("leftover-ok");
+        leftoverEl.classList.add("leftover-nonzero");
+      } else {
+        leftoverLabelEl.textContent = "You are short";
+        leftoverEl.classList.remove("leftover-ok");
+        leftoverEl.classList.add("leftover-nonzero");
+      }
+
+      let msgLines = [];
+
+      msgLines.push("Bill Split Summary 💸");
+      msgLines.push("---------------------");
+      msgLines.push(`Total bill: ₹${total.toFixed(2)}`);
+
+      if (!isNaN(tipPercent) && tipPercent > 0) {
+        msgLines.push(`Tip: ${tipPercent}% (₹${tipAmount.toFixed(2)})`);
+        msgLines.push(`Total with tip: ₹${totalWithTip.toFixed(2)}`);
+        tipBadgeEl.style.display = "inline-block";
+        tipBadgeEl.textContent = `Tip: ${tipPercent}%`;
+      } else {
+        msgLines.push(`Total (no tip): ₹${total.toFixed(2)}`);
+        tipBadgeEl.style.display = "none";
+      }
+
+      msgLines.push("");
+      msgLines.push(`People: ${people}`);
+      msgLines.push(`Exact per person: ₹${exactPerPerson.toFixed(2)}`);
+
+      if (applyRounding) {
+        msgLines.push(`Rounded per person: ₹${roundedPerPerson.toFixed(2)}`);
+      }
+
+      if (Math.abs(leftover) >= 0.01) {
+        const sign = leftover > 0 ? "extra collected" : "short in total";
+        msgLines.push(`Rounding difference: ₹${leftover.toFixed(2)} (${sign})`);
+        msgLines.push("We can adjust this with coins or let someone cover it. 😄");
+      } else {
+        msgLines.push("No rounding difference. Perfect split! ✅");
+      }
+
+      msgLines.push("");
+      msgLines.push("Just pay the rounded amount shown above. 👍");
+
+      messageEl.textContent = msgLines.join("\n");
+    }
+
+    calculateBtn.addEventListener("click", calculate);
+
+    [totalInput, peopleInput, tipInput, roundingInput].forEach(el => {
+      el.addEventListener("input", () => {
+        if (totalInput.value) {
+          calculate();
+        }
+      });
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const text = messageEl.textContent;
+      if (!text || text.startsWith("Enter details")) {
+        copyStatusEl.textContent = "Nothing to copy yet";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copyStatusEl.textContent = "Copied!";
+        setTimeout(() => (copyStatusEl.textContent = ""), 2000);
+      } catch (err) {
+        copyStatusEl.textContent = "Copy failed";
+      }
+    });
+  </script>
+</body>
+</html>
